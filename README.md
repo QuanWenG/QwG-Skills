@@ -7,9 +7,13 @@
 <a id="quanweng-skills"></a>
 <table>
 <tr>
-<td width="100%" valign="top">
+<td width="50%" valign="top">
 <a href="./skill-template"><strong>Skill模板Skill</strong></a>
 <br/><sub>使用Skill创建skill空模板</sub>
+</td>
+<td width="50%" valign="top">
+<a href="./skill-draw-flowchart"><strong>画流程图skill</strong></a>
+<br/><sub>根据提示词画流程图skill(未完成)</sub>
 </td>
 </tr>
 </table>
