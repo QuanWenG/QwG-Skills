@@ -12,7 +12,7 @@
 <br/><sub>使用Skill创建skill空模板</sub>
 </td>
 <td width="50%" valign="top">
-<a href="./skill-draw-flowchart"><strong>画流程图skill</strong></a>
+<a href="./skill-draw-flowchart"><strong>画流程图Skill</strong></a>
 <br/><sub>根据提示词画流程图skill(未完成)</sub>
 </td>
 </tr>
