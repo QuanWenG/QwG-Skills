@@ -1,4 +1,5 @@
 export function Topbar({
+  metadata,
   selectionMode,
   onToggleSelection,
   onExportSnapshot,
@@ -7,8 +8,9 @@ export function Topbar({
   return (
     <header className="topbar">
       <div>
-        <h1>Prompt to HTML Flowchart</h1>
-        <p>用于把用户提示词拆解为 HTML Web 页面生成流程，并保留人工微调入口。</p>
+        <h1>{metadata.title}</h1>
+        <p>{metadata.subtitle}</p>
+        {metadata.description ? <small>{metadata.description}</small> : null}
       </div>
       <div className="topbar-actions">
         <button type="button" onClick={onToggleSelection}>

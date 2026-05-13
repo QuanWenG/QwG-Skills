@@ -1,6 +1,9 @@
-# Prompt to HTML Flowchart Template
+# Architecture Topology HTML Template
 
-LogicFlow + React + Vite template for editing a prompt-to-HTML generation flowchart.
+LogicFlow + React + Vite template for generating an editable architecture
+system topology HTML page. Use groups/layout for structure and labeled arrows
+for service calls, dependencies, data flow, message flow, deployment flow, and
+business logic.
 
 ## Prepare
 
@@ -26,6 +29,12 @@ The script runs `npm ci` from this template directory and recreates `node_module
 
 ```powershell
 npm run dev
+```
+
+Edit the default diagram in:
+
+```text
+src/data/flowTemplate.js
 ```
 
 ## Verify

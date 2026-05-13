@@ -1,4 +1,4 @@
-export function NodeLibrary({ stepTypes, onAddStep }) {
+export function NodeLibrary({ metadata, stepTypes, onAddStep }) {
   return (
     <aside className="left-panel" aria-label="流程节点库">
       <h2>节点库</h2>
@@ -11,6 +11,8 @@ export function NodeLibrary({ stepTypes, onAddStep }) {
         ))}
       </div>
       <div className="hint-box">
+        <strong>布局说明</strong>
+        <p>{metadata.layoutNote}</p>
         <strong>Skill 接口</strong>
         <code>window.FlowchartTemplate.getGraphData()</code>
         <code>window.FlowchartTemplate.renderGraphData(data)</code>

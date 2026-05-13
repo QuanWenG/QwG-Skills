@@ -1,3 +1,3 @@
 display_name: Skill Draw Flowchart
-short_description: Draw and refine flowcharts, workflow diagrams, process diagrams, and swimlane-style diagrams.
-default_prompt: 帮我使用 skill-draw-flowchart 绘制流程图。
+short_description: Generate editable architecture topology HTML projects with grouped system structure and labeled business-flow arrows.
+default_prompt: 帮我使用 skill-draw-flowchart 根据这些系统和业务数据生成一个可编辑的架构系统拓扑图 HTML。
