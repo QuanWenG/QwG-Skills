@@ -18,6 +18,7 @@
 10. **初始加载不能有可撤销步骤**：模板刚加载完成时，理论上没有任何用户操作，所以 LogicFlow 的“上一步”必须是不可用状态。初始化渲染、图层校正、控件挂载完成后，要把当前图重置为 history 的唯一基线。
 11. **导出必须等同当前画布**：导出图片必须来自当前 LogicFlow 图，而不是旧数据或 DOM 背景。导出结果要和网页当前看到的一致，包含架构大节点、普通节点、箭头、标签，并且不能出现节点重叠或标签遮挡。
 12. **做完数据后必须检查节点问题**：完成 `src/data/flowTemplate.js` 后必须检查重复 id、悬空边、容器重叠、节点越界、普通节点重叠、标签遮挡、导出一致性和初始 history 状态。发现问题先修数据坐标、容器尺寸、标签位置和层级，再汇报。
+13. **复杂标签不要用 HTML overlay 承载**：LogicFlow `Label` HTML 覆盖层容易在缩放时相对画布坐标漂移，也可能被 Snapshot 导出遗漏。需要稳定缩放和导出时，把边标签建模为真实 LogicFlow/SVG 节点，例如 `edge-label-node`，并清空边自身 `text.value` 避免重复显示。
 
 ## Data And Layout Rules
 
@@ -31,8 +32,77 @@
 - 普通节点之间不能重叠或贴得过近。注册中心、配置中心、网关、业务服务等控制面/业务面节点要分层摆放，避免相互遮挡。
 - 箭头标签不能直接压在水平箭头或节点上。必要时用 `text: { value, x, y }` 显式放置标签，并开启/保留边标签拖拽能力。
 - 标签和箭头要可读：标签建议偏离线段上/下方，并使用白底、描边或等效样式避免被线条穿过。
+- 标签必须能稳定缩放和导出。若普通 edge text 被其他线段穿过，或 HTML overlay 标签在缩放/导出时不稳定，改用真实标签节点：`role = 'edge-label'`、`type = 'edge-label-node'`、`zIndex` 高于箭头和普通节点、无锚点、浅色填充、细描边、无阴影。
 - 拉开普通节点后，必须同步调整架构大节点尺寸和位置；调整架构大节点后，也必须复查它们之间是否重叠。
 - 上述检查未通过时，先修 `src/data/flowTemplate.js`，再汇报。不能只说“用户可以手动调整”。
+
+## Large Spacing And Contraction Method
+
+当用户反馈“节点重叠、标签遮挡、线太密、看不清”时，优先按这个顺序修，不要只局部挪几个点：
+
+1. **先拉到大间距基线**：把架构域、普通节点、存储/外部区和 CI/CD 区整体拉开，宁可画布更大，也不要在拥挤布局里微调。
+2. **先修包含关系**：父容器要完全包裹子容器和普通节点，容器标题保留顶部安全带；每次移动节点后都要同步复查容器尺寸和边界。
+3. **再收缩局部空白**：只有在无重叠、无越界、无标题遮挡后，才逐步收紧局部距离；一旦出现遮挡，回退到上一版安全间距。
+4. **用脚本做几何自检**：至少检查容器包含、容器重叠、普通节点重叠、标签-标签重叠、标签-节点重叠、标签-标题重叠。不要只凭截图目测通过。
+5. **密集箭头分色分型**：不同关系使用相邻可区分颜色和箭头头型，例如业务流实心箭头、服务调用空心箭头、数据流菱形、依赖圆形或虚线、部署流紫色虚线。
+
+## Edge Label Stability Pattern
+
+普通 LogicFlow edge text、HTML Label overlay、真实标签节点各有取舍：
+
+| 方案 | 适用场景 | 风险 |
+|---|---|---|
+| 普通 edge text | 简单图、线少、标签不被其他线穿过 | 标签在边 group 内，其他线可能从上层穿过；复杂拓扑难控层级 |
+| HTML Label overlay | 需要网页交互编辑、但不强依赖导出 | 缩放时可能漂移；Snapshot 可能漏掉 HTML 内容 |
+| 真实 `edge-label-node` | 复杂架构图、必须稳定缩放和导出 | 节点数增加；需要在布局检查中把它当标签处理 |
+
+复杂架构拓扑默认优先用真实标签节点：
+
+```js
+const EDGE_LABEL_Z_INDEX = 300
+
+function registerEdgeLabelNode(lf) {
+  lf.register('edge-label-node', ({ RectNode, RectNodeModel }) => {
+    class EdgeLabelNodeModel extends RectNodeModel {
+      setAttributes() {
+        super.setAttributes()
+        this.width = this.properties?.width || 118
+        this.height = this.properties?.height || 30
+        this.zIndex = EDGE_LABEL_Z_INDEX
+        this.autoToFront = false
+        this.rotatable = false
+        this.resizable = false
+      }
+
+      getDefaultAnchor() {
+        return []
+      }
+
+      getNodeStyle() {
+        const style = super.getNodeStyle()
+        return {
+          ...style,
+          fill: this.properties?.labelFill || '#ffffff',
+          fillOpacity: 0.98,
+          stroke: this.properties?.labelStroke || '#d8dee4',
+          strokeWidth: 1.2,
+          radius: 5,
+        }
+      }
+    }
+
+    return { view: RectNode, model: EdgeLabelNodeModel }
+  })
+}
+```
+
+数据建模时：
+
+- 边保留关系元信息和原始标签坐标：`properties.labelValue`、`labelX`、`labelY`。
+- 边自身 `text.value` 置空，避免和标签节点重复显示。
+- 为每条带标签箭头创建一个 `edge-label-node`，`properties.role = 'edge-label'`，`zIndex` 高于边和普通节点。
+- 标签节点使用对应箭头的浅色 `labelFill` / `labelStroke` / `labelColor`，不要加阴影；阴影在密集图中会显得突兀并降低专业感。
+- 标签节点无锚点，不参与连线，只作为可缩放、可导出、可编辑的说明牌。
 
 ## Layout Rules
 
@@ -56,7 +126,7 @@
 1. 容器检查：所有 `topology-group` 大节点互不重叠，内部组件没有越界。
 2. 节点检查：普通节点不重叠、不贴边、不压住容器标题。
 3. 标签检查：边标签不被箭头穿过，不贴住节点，不和其他标签重叠。
-4. 缩放/导出检查：架构大节点、普通节点、箭头、标签都属于 LogicFlow 图数据，缩放和导出表现一致。
+4. 缩放/导出检查：架构大节点、普通节点、箭头、标签都属于 LogicFlow 图数据，缩放和导出表现一致。复杂图中的标签应使用真实 SVG/LogicFlow 节点，不使用导出不稳定的 HTML overlay。
 5. 编辑同步检查：网页里拖动节点、缩放架构框、移动边标签后，当前 Graph JSON / `getGraphData()` 必须同步更新。
 6. 源数据检查：必须保留初始源图数据用于“重置”，不能让网页编辑覆盖 reset 的基准数据。
 7. 历史检查：“上一步 / 下一步”必须接入 LogicFlow history，并在执行后同步 Graph JSON。

@@ -142,6 +142,135 @@ export const STEP_TYPES = [
       note: '如 Docker、Maven、K8s、Jenkins、GitLab。',
     },
   },
+  {
+    label: '边标签',
+    type: 'edge-label-node',
+    text: '关系标签',
+    properties: {
+      role: 'edge-label',
+      group: 'edge-labels',
+      category: 'edge-label',
+      width: 118,
+      height: 30,
+      labelFill: '#ffffff',
+      labelStroke: '#d8dee4',
+      labelColor: '#172026',
+      prompt: '真实 LogicFlow/SVG 标签节点，随缩放且参与图片导出。',
+      note: '复杂架构图中用于替代 HTML overlay 标签，避免缩放漂移和导出缺字。',
+    },
+  },
+]
+
+const EDGE_THEME = {
+  'business-flow': {
+    stroke: '#2563eb',
+    labelFill: '#dbeafe',
+    labelStroke: '#93c5fd',
+    labelColor: '#1e3a8a',
+    arrowType: 'solid',
+  },
+  'service-call': {
+    stroke: '#16a34a',
+    labelFill: '#ccfbf1',
+    labelStroke: '#86efac',
+    labelColor: '#14532d',
+    arrowType: 'hollow',
+    arrowFill: '#ffffff',
+  },
+  'message-flow': {
+    stroke: '#0891b2',
+    labelFill: '#cffafe',
+    labelStroke: '#67e8f9',
+    labelColor: '#164e63',
+    arrowType: 'solid',
+    strokeDasharray: '8 5',
+  },
+  'data-flow': {
+    stroke: '#ea580c',
+    labelFill: '#ffedd5',
+    labelStroke: '#fdba74',
+    labelColor: '#7c2d12',
+    arrowType: 'diamond',
+  },
+  'depends-on': {
+    stroke: '#475569',
+    labelFill: '#f1f5f9',
+    labelStroke: '#cbd5e1',
+    labelColor: '#334155',
+    arrowType: 'circle',
+    arrowFill: '#ffffff',
+    strokeDasharray: '9 6',
+  },
+  'deploy-flow': {
+    stroke: '#7c3aed',
+    labelFill: '#ede9fe',
+    labelStroke: '#c4b5fd',
+    labelColor: '#4c1d95',
+    arrowType: 'hollow',
+    arrowFill: '#ffffff',
+    strokeDasharray: '12 6',
+  },
+}
+
+const edge = (id, sourceNodeId, targetNodeId, value, x, y, relation, flow) => ({
+  id,
+  type: 'colored-polyline',
+  sourceNodeId,
+  targetNodeId,
+  text: { value: '', x, y },
+  zIndex: 100,
+  properties: {
+    relation,
+    flow,
+    labelValue: value,
+    labelX: x,
+    labelY: y,
+    strokeWidth: 2.1,
+    hoverStroke: EDGE_THEME[relation]?.stroke,
+    selectedStroke: EDGE_THEME[relation]?.stroke,
+    ...(EDGE_THEME[relation] || EDGE_THEME['depends-on']),
+  },
+})
+
+const edgeLabel = (id, x, y, text, relation, flow) => ({
+  id: `${id}-label`,
+  type: 'edge-label-node',
+  x,
+  y,
+  text: { value: text, x, y },
+  zIndex: 300,
+  properties: {
+    role: 'edge-label',
+    group: 'edge-labels',
+    category: 'edge-label',
+    relation,
+    flow,
+    width: 118,
+    height: text.length > 14 ? 38 : 30,
+    labelFill: EDGE_THEME[relation]?.labelFill || '#ffffff',
+    labelStroke: EDGE_THEME[relation]?.labelStroke || '#d8dee4',
+    labelColor: EDGE_THEME[relation]?.labelColor || '#172026',
+    prompt: '真实 LogicFlow/SVG 标签节点，随画布缩放并参与图片导出。',
+    note: '复杂架构图默认用标签节点承载边说明，避免 HTML overlay 缩放漂移和导出缺字。',
+  },
+})
+
+const EDGE_LABELS = [
+  edgeLabel('edge-client-gateway', 300, 270, 'HTTPS请求', 'business-flow', 'request'),
+  edgeLabel('edge-gateway-bs1', 600, 270, '路由/鉴权通过', 'service-call', 'business'),
+  edgeLabel('edge-gateway-bs2', 565, 430, '用户上下文', 'service-call', 'business'),
+  edgeLabel('edge-registry-service', 840, 205, '注册/发现', 'depends-on', 'technical'),
+  edgeLabel('edge-bs1-bs3', 910, 270, '扣减库存', 'service-call', 'business'),
+  edgeLabel('edge-bs2-bs4', 910, 450, '支付校验', 'service-call', 'business'),
+  edgeLabel('edge-service-mq', 1250, 230, '库存事件', 'message-flow', 'business'),
+  edgeLabel('edge-service-redis', 1250, 440, '缓存读写', 'data-flow', 'business'),
+  edgeLabel('edge-config-services', 775, 555, '配置拉取', 'depends-on', 'technical'),
+  edgeLabel('edge-middleware-storage', 1620, 555, '分库分表', 'data-flow', 'technical'),
+  edgeLabel('edge-service-mysql', 1440, 320, '订单落库', 'data-flow', 'business'),
+  edgeLabel('edge-service-file', 1440, 505, '凭证/文件', 'data-flow', 'business'),
+  edgeLabel('edge-gitlab-jenkins', 680, 875, '提交触发', 'deploy-flow', 'release'),
+  edgeLabel('edge-jenkins-k8s', 970, 875, '构建/发布', 'deploy-flow', 'release'),
+  edgeLabel('edge-k8s-bs4', 1095, 745, '部署服务', 'deploy-flow', 'release'),
 ]
 
 export const INITIAL_GRAPH = {
@@ -149,16 +278,16 @@ export const INITIAL_GRAPH = {
     {
       id: 'group-external',
       type: 'group-node',
-      x: 120,
-      y: 300,
-      text: { value: '外部入口', x: 120, y: 55 },
+      x: 160,
+      y: 360,
+      text: { value: '外部入口', x: 160, y: 75 },
       zIndex: 0,
       properties: {
         role: 'topology-group',
         group: 'external',
         category: 'architecture-zone',
-        width: 210,
-        height: 540,
+        width: 260,
+        height: 620,
         radius: 8,
         style: {
           fill: '#f4f7ff',
@@ -174,16 +303,16 @@ export const INITIAL_GRAPH = {
     {
       id: 'group-service-center',
       type: 'group-node',
-      x: 590,
-      y: 300,
-      text: { value: '服务中心', x: 590, y: 55 },
+      x: 780,
+      y: 360,
+      text: { value: '服务中心', x: 780, y: 75 },
       zIndex: 0,
       properties: {
         role: 'topology-group',
         group: 'service-center',
         category: 'architecture-zone',
-        width: 700,
-        height: 540,
+        width: 920,
+        height: 620,
         radius: 8,
         style: {
           fill: '#f6fbf9',
@@ -199,16 +328,16 @@ export const INITIAL_GRAPH = {
     {
       id: 'group-middleware',
       type: 'group-node',
-      x: 1100,
-      y: 300,
-      text: { value: '中间件', x: 1100, y: 55 },
+      x: 1430,
+      y: 360,
+      text: { value: '中间件', x: 1430, y: 75 },
       zIndex: 0,
       properties: {
         role: 'topology-group',
         group: 'middleware',
         category: 'architecture-zone',
         width: 300,
-        height: 540,
+        height: 620,
         radius: 8,
         style: {
           fill: '#fff7ed',
@@ -224,16 +353,16 @@ export const INITIAL_GRAPH = {
     {
       id: 'group-storage',
       type: 'group-node',
-      x: 1430,
-      y: 300,
-      text: { value: '存储', x: 1430, y: 55 },
+      x: 1810,
+      y: 360,
+      text: { value: '存储', x: 1810, y: 75 },
       zIndex: 0,
       properties: {
         role: 'topology-group',
         group: 'storage',
         category: 'architecture-zone',
-        width: 300,
-        height: 540,
+        width: 320,
+        height: 620,
         radius: 8,
         style: {
           fill: '#fcf9ef',
@@ -249,16 +378,16 @@ export const INITIAL_GRAPH = {
     {
       id: 'group-ci-cd',
       type: 'group-node',
-      x: 720,
-      y: 675,
-      text: { value: 'CI/CD', x: 720, y: 600 },
+      x: 820,
+      y: 910,
+      text: { value: 'CI/CD', x: 820, y: 825 },
       zIndex: 0,
       properties: {
         role: 'topology-group',
         group: 'ci-cd',
         category: 'architecture-zone',
-        width: 900,
-        height: 190,
+        width: 1120,
+        height: 220,
         radius: 8,
         style: {
           fill: '#f7f5ff',
@@ -274,8 +403,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'client',
       type: 'circle',
-      x: 120,
-      y: 220,
+      x: 160,
+      y: 300,
       text: '用户端',
       properties: {
         role: 'external',
@@ -288,8 +417,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'api-gateway',
       type: 'diamond',
-      x: 330,
-      y: 220,
+      x: 440,
+      y: 300,
       text: 'API网关',
       properties: {
         role: 'gateway',
@@ -302,8 +431,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'registry-center',
       type: 'circle',
-      x: 545,
-      y: 125,
+      x: 700,
+      y: 170,
       text: '注册中心',
       properties: {
         role: 'registry',
@@ -316,8 +445,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'bs1',
       type: 'rect',
-      x: 520,
-      y: 240,
+      x: 760,
+      y: 300,
       text: '订单服务',
       properties: {
         role: 'service',
@@ -330,8 +459,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'bs2',
       type: 'rect',
-      x: 520,
-      y: 370,
+      x: 760,
+      y: 480,
       text: '用户服务',
       properties: {
         role: 'service',
@@ -344,8 +473,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'bs3',
       type: 'rect',
-      x: 760,
-      y: 240,
+      x: 1060,
+      y: 300,
       text: '库存服务',
       properties: {
         role: 'service',
@@ -358,8 +487,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'bs4',
       type: 'rect',
-      x: 760,
-      y: 370,
+      x: 1060,
+      y: 480,
       text: '支付服务',
       properties: {
         role: 'service',
@@ -372,8 +501,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'config-center',
       type: 'circle',
-      x: 650,
-      y: 500,
+      x: 900,
+      y: 580,
       text: '配置中心',
       properties: {
         role: 'config',
@@ -386,8 +515,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'mq',
       type: 'rect',
-      x: 1010,
-      y: 185,
+      x: 1430,
+      y: 220,
       text: 'MQ',
       properties: {
         role: 'middleware',
@@ -400,8 +529,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'redis',
       type: 'rect',
-      x: 1010,
-      y: 315,
+      x: 1430,
+      y: 400,
       text: 'Redis',
       properties: {
         role: 'middleware',
@@ -414,8 +543,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'sharding',
       type: 'rect',
-      x: 1010,
-      y: 445,
+      x: 1430,
+      y: 580,
       text: '分库分表',
       properties: {
         role: 'middleware',
@@ -428,8 +557,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'mysql',
       type: 'rect',
-      x: 1340,
-      y: 245,
+      x: 1810,
+      y: 300,
       text: 'MySQL',
       properties: {
         role: 'storage',
@@ -442,8 +571,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'fastdfs',
       type: 'rect',
-      x: 1340,
-      y: 390,
+      x: 1810,
+      y: 520,
       text: 'FastDFS',
       properties: {
         role: 'storage',
@@ -456,8 +585,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'gitlab',
       type: 'rect',
-      x: 480,
-      y: 660,
+      x: 520,
+      y: 910,
       text: 'GitLab',
       properties: {
         role: 'ci-cd',
@@ -470,8 +599,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'jenkins',
       type: 'rect',
-      x: 720,
-      y: 660,
+      x: 820,
+      y: 910,
       text: 'Jenkins',
       properties: {
         role: 'ci-cd',
@@ -484,8 +613,8 @@ export const INITIAL_GRAPH = {
     {
       id: 'k8s',
       type: 'rect',
-      x: 960,
-      y: 660,
+      x: 1120,
+      y: 910,
       text: 'K8s',
       properties: {
         role: 'ci-cd',
@@ -495,128 +624,25 @@ export const INITIAL_GRAPH = {
         note: '通用示例；也可替换为 Docker Compose、VM、裸机部署。',
       },
     },
+
+    ...EDGE_LABELS,
   ],
   edges: [
-    {
-      id: 'edge-client-gateway',
-      type: 'polyline',
-      sourceNodeId: 'client',
-      targetNodeId: 'api-gateway',
-      text: { value: 'HTTPS请求', x: 225, y: 190 },
-      properties: { relation: 'business-flow', flow: 'request' },
-    },
-    {
-      id: 'edge-gateway-bs1',
-      type: 'polyline',
-      sourceNodeId: 'api-gateway',
-      targetNodeId: 'bs1',
-      text: { value: '路由/鉴权通过', x: 425, y: 190 },
-      properties: { relation: 'service-call', flow: 'business' },
-    },
-    {
-      id: 'edge-gateway-bs2',
-      type: 'polyline',
-      sourceNodeId: 'api-gateway',
-      targetNodeId: 'bs2',
-      text: { value: '用户上下文', x: 405, y: 330 },
-      properties: { relation: 'service-call', flow: 'business' },
-    },
-    {
-      id: 'edge-registry-service',
-      type: 'polyline',
-      sourceNodeId: 'registry-center',
-      targetNodeId: 'bs1',
-      text: { value: '注册/发现', x: 500, y: 180 },
-      properties: { relation: 'depends-on', flow: 'technical' },
-    },
-    {
-      id: 'edge-bs1-bs3',
-      type: 'polyline',
-      sourceNodeId: 'bs1',
-      targetNodeId: 'bs3',
-      text: { value: '扣减库存', x: 640, y: 210 },
-      properties: { relation: 'service-call', flow: 'business' },
-    },
-    {
-      id: 'edge-bs2-bs4',
-      type: 'polyline',
-      sourceNodeId: 'bs2',
-      targetNodeId: 'bs4',
-      text: { value: '支付校验', x: 640, y: 340 },
-      properties: { relation: 'service-call', flow: 'business' },
-    },
-    {
-      id: 'edge-service-mq',
-      type: 'polyline',
-      sourceNodeId: 'bs3',
-      targetNodeId: 'mq',
-      text: { value: '库存事件', x: 885, y: 185 },
-      properties: { relation: 'message-flow', flow: 'business' },
-    },
-    {
-      id: 'edge-service-redis',
-      type: 'polyline',
-      sourceNodeId: 'bs4',
-      targetNodeId: 'redis',
-      text: { value: '缓存读写', x: 885, y: 315 },
-      properties: { relation: 'data-flow', flow: 'business' },
-    },
-    {
-      id: 'edge-config-services',
-      type: 'polyline',
-      sourceNodeId: 'config-center',
-      targetNodeId: 'bs2',
-      text: { value: '配置拉取', x: 580, y: 440 },
-      properties: { relation: 'depends-on', flow: 'technical' },
-    },
-    {
-      id: 'edge-middleware-storage',
-      type: 'polyline',
-      sourceNodeId: 'sharding',
-      targetNodeId: 'mysql',
-      text: { value: '分库分表', x: 1180, y: 400 },
-      properties: { relation: 'data-flow', flow: 'technical' },
-    },
-    {
-      id: 'edge-service-mysql',
-      type: 'polyline',
-      sourceNodeId: 'bs1',
-      targetNodeId: 'mysql',
-      text: { value: '订单落库', x: 930, y: 245 },
-      properties: { relation: 'data-flow', flow: 'business' },
-    },
-    {
-      id: 'edge-service-file',
-      type: 'polyline',
-      sourceNodeId: 'bs4',
-      targetNodeId: 'fastdfs',
-      text: { value: '凭证/文件', x: 1060, y: 385 },
-      properties: { relation: 'data-flow', flow: 'business' },
-    },
-    {
-      id: 'edge-gitlab-jenkins',
-      type: 'polyline',
-      sourceNodeId: 'gitlab',
-      targetNodeId: 'jenkins',
-      text: { value: '提交触发', x: 600, y: 630 },
-      properties: { relation: 'deploy-flow', flow: 'release' },
-    },
-    {
-      id: 'edge-jenkins-k8s',
-      type: 'polyline',
-      sourceNodeId: 'jenkins',
-      targetNodeId: 'k8s',
-      text: { value: '构建/发布', x: 840, y: 630 },
-      properties: { relation: 'deploy-flow', flow: 'release' },
-    },
-    {
-      id: 'edge-k8s-bs4',
-      type: 'polyline',
-      sourceNodeId: 'k8s',
-      targetNodeId: 'bs4',
-      text: { value: '部署服务', x: 900, y: 520 },
-      properties: { relation: 'deploy-flow', flow: 'release' },
-    },
+    edge('edge-client-gateway', 'client', 'api-gateway', 'HTTPS请求', 300, 270, 'business-flow', 'request'),
+    edge('edge-gateway-bs1', 'api-gateway', 'bs1', '路由/鉴权通过', 600, 270, 'service-call', 'business'),
+    edge('edge-gateway-bs2', 'api-gateway', 'bs2', '用户上下文', 565, 430, 'service-call', 'business'),
+    edge('edge-registry-service', 'registry-center', 'bs1', '注册/发现', 840, 205, 'depends-on', 'technical'),
+    edge('edge-bs1-bs3', 'bs1', 'bs3', '扣减库存', 910, 270, 'service-call', 'business'),
+    edge('edge-bs2-bs4', 'bs2', 'bs4', '支付校验', 910, 450, 'service-call', 'business'),
+    edge('edge-service-mq', 'bs3', 'mq', '库存事件', 1250, 230, 'message-flow', 'business'),
+    edge('edge-service-redis', 'bs4', 'redis', '缓存读写', 1250, 440, 'data-flow', 'business'),
+    edge('edge-config-services', 'config-center', 'bs2', '配置拉取', 775, 555, 'depends-on', 'technical'),
+    edge('edge-middleware-storage', 'sharding', 'mysql', '分库分表', 1620, 555, 'data-flow', 'technical'),
+    edge('edge-service-mysql', 'bs1', 'mysql', '订单落库', 1440, 320, 'data-flow', 'business'),
+    edge('edge-service-file', 'bs4', 'fastdfs', '凭证/文件', 1440, 505, 'data-flow', 'business'),
+    edge('edge-gitlab-jenkins', 'gitlab', 'jenkins', '提交触发', 680, 875, 'deploy-flow', 'release'),
+    edge('edge-jenkins-k8s', 'jenkins', 'k8s', '构建/发布', 970, 875, 'deploy-flow', 'release'),
+    edge('edge-k8s-bs4', 'k8s', 'bs4', '部署服务', 1095, 745, 'deploy-flow', 'release'),
   ],
 }
 

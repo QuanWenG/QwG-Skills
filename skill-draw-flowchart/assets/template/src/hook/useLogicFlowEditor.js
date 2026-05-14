@@ -14,6 +14,7 @@ import { stringifyGraph } from '../data/graphUtils'
 const GROUP_Z_INDEX = 0
 const EDGE_Z_INDEX = 100
 const NODE_Z_INDEX = 200
+const EDGE_LABEL_Z_INDEX = 300
 const SOURCE_GRAPH = normalizeGraphLayering(cloneGraph(INITIAL_GRAPH))
 
 function cloneGraph(graph) {
@@ -26,7 +27,11 @@ function normalizeGraphLayering(graph) {
     nodes: (graph.nodes || []).map((node) => ({
       ...node,
       zIndex:
-        node.properties?.role === 'topology-group' ? GROUP_Z_INDEX : NODE_Z_INDEX,
+        node.properties?.role === 'topology-group'
+          ? GROUP_Z_INDEX
+          : node.properties?.role === 'edge-label'
+            ? EDGE_LABEL_Z_INDEX
+            : NODE_Z_INDEX,
     })),
     edges: (graph.edges || []).map((edge) => ({
       ...edge,
@@ -89,11 +94,103 @@ function registerTopologyGroupNode(lf) {
   })
 }
 
+function registerEdgeLabelNode(lf) {
+  lf.register('edge-label-node', ({ RectNode, RectNodeModel }) => {
+    class EdgeLabelNodeModel extends RectNodeModel {
+      setAttributes() {
+        super.setAttributes()
+        this.width = this.properties?.width || 118
+        this.height = this.properties?.height || 30
+        this.zIndex = EDGE_LABEL_Z_INDEX
+        this.autoToFront = false
+        this.rotatable = false
+        this.resizable = false
+      }
+
+      getDefaultAnchor() {
+        return []
+      }
+
+      getNodeStyle() {
+        const style = super.getNodeStyle()
+        return {
+          ...style,
+          fill: this.properties?.labelFill || '#ffffff',
+          fillOpacity: 0.98,
+          stroke: this.properties?.labelStroke || '#d8dee4',
+          strokeWidth: 1.2,
+          radius: 5,
+        }
+      }
+
+      getTextStyle() {
+        const style = super.getTextStyle()
+        return {
+          ...style,
+          color: this.properties?.labelColor || '#172026',
+          fontSize: 12,
+          fontWeight: 650,
+          lineHeight: 1.2,
+          overflowMode: 'autoWrap',
+          textWidth: this.width - 16,
+        }
+      }
+    }
+
+    return {
+      view: RectNode,
+      model: EdgeLabelNodeModel,
+    }
+  })
+}
+
+function registerColoredPolyline(lf) {
+  lf.register('colored-polyline', ({ PolylineEdge, PolylineEdgeModel }) => {
+    class ColoredPolylineModel extends PolylineEdgeModel {
+      getEdgeStyle() {
+        const style = super.getEdgeStyle()
+        const stroke = this.properties?.stroke || '#64748b'
+        return {
+          ...style,
+          stroke,
+          strokeWidth: this.properties?.strokeWidth || 2,
+          strokeDasharray: this.properties?.strokeDasharray,
+          hoverStroke: this.properties?.hoverStroke || stroke,
+          selectedStroke: this.properties?.selectedStroke || stroke,
+        }
+      }
+
+      getArrowStyle() {
+        const style = super.getArrowStyle()
+        const stroke = this.properties?.stroke || '#64748b'
+        return {
+          ...style,
+          stroke,
+          fill: this.properties?.arrowFill || stroke,
+          strokeWidth: this.properties?.strokeWidth || 2,
+          endArrowType: this.properties?.arrowType || 'solid',
+          offset: this.properties?.arrowOffset || 12,
+          verticalLength: this.properties?.arrowLength || 6,
+        }
+      }
+    }
+
+    return {
+      view: PolylineEdge,
+      model: ColoredPolylineModel,
+    }
+  })
+}
+
 function enforceLayering(lf) {
   const { nodes, edges } = lf.getGraphData()
   nodes.forEach((node) => {
     const nextZIndex =
-      node.properties?.role === 'topology-group' ? GROUP_Z_INDEX : NODE_Z_INDEX
+      node.properties?.role === 'topology-group'
+        ? GROUP_Z_INDEX
+        : node.properties?.role === 'edge-label'
+          ? EDGE_LABEL_Z_INDEX
+          : NODE_Z_INDEX
     if (node.zIndex !== nextZIndex) {
       lf.setElementZIndex(node.id, nextZIndex)
     }
@@ -245,6 +342,8 @@ export function useLogicFlowEditor() {
 
     applyEditorTheme(lf)
     registerTopologyGroupNode(lf)
+    registerEdgeLabelNode(lf)
+    registerColoredPolyline(lf)
     lf.render(sourceGraphRef.current)
     enforceLayering(lf)
     lf.extension.dndPanel.setPatternItems(PATTERN_ITEMS)
@@ -329,13 +428,18 @@ export function useLogicFlowEditor() {
     const x = 160 + (nodes.length % 4) * 210
     const y = 330 + Math.floor(nodes.length / 4) * 120
     const isGroupNode = step.properties?.role === 'topology-group'
+    const isEdgeLabel = step.properties?.role === 'edge-label'
     lf.addNode({
       type: step.type,
       x,
       y,
       text: step.text,
       properties: step.properties,
-      zIndex: isGroupNode ? GROUP_Z_INDEX : NODE_Z_INDEX,
+      zIndex: isGroupNode
+        ? GROUP_Z_INDEX
+        : isEdgeLabel
+          ? EDGE_LABEL_Z_INDEX
+          : NODE_Z_INDEX,
     })
     enforceLayering(lf)
   }

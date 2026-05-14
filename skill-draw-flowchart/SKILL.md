@@ -22,6 +22,8 @@ description: Generate, refine, and deliver architecture system topology diagram 
 4. 网页编辑要同步当前 Graph JSON，同时保留源图数据用于重置。
 5. `history:change` 不能改图；初始加载后不能出现可撤销的“上一步”。
 
+复杂图还必须牢记：边标签若出现缩放漂移、导出缺失、被其他线穿过，优先改成真实 LogicFlow/SVG 标签节点（例如 `edge-label-node`），不要依赖 HTML overlay 标签。
+
 ---
 
 ## 工作流总览
@@ -363,6 +365,7 @@ properties: {
 - `group-node` 容器、普通节点、箭头标签都要可读、可编辑、可导出。
 - 完成数据和页面后必须做节点问题复查，发现问题先改坐标、尺寸、标签位置、层级或样式。
 - 排版合理，节点需要拉开一定间距，箭头之间间距不能太小；分组层级和边界清晰；箭头标签避让节点和线段；架构节点之间不能重叠除非是包含关系，需要保持间距，架构节点大小必须包含属于该架构的全部小节点。
+- 用户反馈“太挤 / 标签被线穿过 / 标签导出缺失 / 缩放后标签漂移”时，读取 [`TOPOLOGY-RULES.md`](references/TOPOLOGY-RULES.md) 的 **Large Spacing And Contraction Method** 与 **Edge Label Stability Pattern**，按“大间距基线 -> 几何自检 -> 局部收缩 -> 真实标签节点”的顺序处理。
 
 ### 2.4 首版架构拓扑图 —— 主线程 + 强制验收
 
@@ -465,7 +468,8 @@ npm run dev
 | “只有结构没有流程” | 输入材料不足 / 业务链路缺失 | 若用户未给业务链路，标注“业务流程省略”；若已给，补箭头。 |
 | “不符合项目结构” | 项目粗分析 | 回看目录、配置和关键文件，修正 `flow-plan.md` 后再改图。 |
 | “想要更像架构汇报图” | 主题 / 受众 | 调整标题、副标题、分组层级、颜色和节点密度，保留可编辑能力。 |
-| “给我图片” | 导出 | 用页面“导出图片”按钮或 LogicFlow Snapshot 导出。 |
+| “标签被线穿过 / 导出没标签 / 缩放标签漂移” | 标签层级 / 导出一致性 | 不再使用 HTML overlay 标签；把标签建模为真实 `edge-label-node`，清空边自身可见文字，并复查 Snapshot 导出。 |
+| “给我图片” | 导出 | 用页面“导出图片”按钮或 LogicFlow Snapshot 导出；导出后检查标签内容是否存在。 |
 
 ---
 

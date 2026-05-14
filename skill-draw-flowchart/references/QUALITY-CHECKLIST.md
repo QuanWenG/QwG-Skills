@@ -44,6 +44,11 @@ project is complete.
   nodes such as registry/config/gateway nodes.
 - Edge labels are offset from horizontal arrows and component nodes when needed;
   labels remain readable and are not pierced by arrow lines.
+- Edge labels that must survive zoom and image export are represented as real
+  LogicFlow/SVG graph data, not HTML-only overlays. For dense topology diagrams,
+  prefer dedicated label nodes such as `edge-label-node` with `role=edge-label`.
+- Edge label nodes sit above edges, have no anchors, use a flat light background
+  with no drop shadow, and do not duplicate visible edge text.
 - If component coordinates are changed, related architecture frame size/position
   is rechecked; if frame size/position changes, frame overlap is rechecked.
 
@@ -73,6 +78,9 @@ project is complete.
 - Export image button works through LogicFlow Snapshot and exports the current
   LogicFlow graph, including architecture `group-node` frames, edited node
   positions, arrows, and labels.
+- Exported images are visually checked for label content. If labels disappear
+  from export or drift during zoom, replace HTML overlay labels with real graph
+  label nodes and clear the edge's visible text.
 
 ## Verification
 
