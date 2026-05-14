@@ -9,7 +9,7 @@
 <tr>
 <td width="50%" valign="top">
 <a href="./skill-template"><strong>Skill模板Skill</strong></a>
-<br/><sub>使用Skill创建skill空模板</sub>
+<br/><sub>使用Skill创建个人认为很好的skill空模板骨架</sub>
 </td>
 <td width="50%" valign="top">
 <a href="./skill-draw-flowchart"><strong>画系统架构拓扑流程图Skill</strong></a>
