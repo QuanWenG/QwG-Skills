@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import LogicFlow from '@logicflow/core'
+import LogicFlow, { OverlapMode } from '@logicflow/core'
 import {
   Control,
   DndPanel,
@@ -11,10 +11,119 @@ import {
 import { INITIAL_GRAPH, PATTERN_ITEMS, STEP_TYPES } from '../data/flowTemplate'
 import { stringifyGraph } from '../data/graphUtils'
 
+const GROUP_Z_INDEX = 0
+const EDGE_Z_INDEX = 100
+const NODE_Z_INDEX = 200
+const SOURCE_GRAPH = normalizeGraphLayering(cloneGraph(INITIAL_GRAPH))
+
+function cloneGraph(graph) {
+  return JSON.parse(JSON.stringify(graph))
+}
+
+function normalizeGraphLayering(graph) {
+  return {
+    ...graph,
+    nodes: (graph.nodes || []).map((node) => ({
+      ...node,
+      zIndex:
+        node.properties?.role === 'topology-group' ? GROUP_Z_INDEX : NODE_Z_INDEX,
+    })),
+    edges: (graph.edges || []).map((edge) => ({
+      ...edge,
+      zIndex: EDGE_Z_INDEX,
+    })),
+  }
+}
+
+function registerTopologyGroupNode(lf) {
+  lf.register('group-node', ({ RectNode, RectNodeModel }) => {
+    class GroupNodeModel extends RectNodeModel {
+      setAttributes() {
+        super.setAttributes()
+        const { width = 300, height = 180 } = this.properties || {}
+        this.width = width
+        this.height = height
+        this.text = {
+          ...this.text,
+          x: this.x,
+          y: this.y - this.height / 2 + 25,
+        }
+        this.zIndex = GROUP_Z_INDEX
+        this.autoToFront = false
+        this.rotatable = false
+        this.resizable = true
+      }
+
+      getDefaultAnchor() {
+        return []
+      }
+
+      getNodeStyle() {
+        const style = super.getNodeStyle()
+        return {
+          ...style,
+          fill: '#ffffff',
+          fillOpacity: 0.46,
+          stroke: '#94a3b8',
+          strokeDasharray: '8 6',
+          strokeWidth: 1.4,
+          ...(this.properties?.style || {}),
+        }
+      }
+
+      getTextStyle() {
+        const style = super.getTextStyle()
+        return {
+          ...style,
+          color: '#334155',
+          fontSize: 13,
+          fontWeight: 700,
+        }
+      }
+    }
+
+    return {
+      view: RectNode,
+      model: GroupNodeModel,
+    }
+  })
+}
+
+function enforceLayering(lf) {
+  const { nodes, edges } = lf.getGraphData()
+  nodes.forEach((node) => {
+    const nextZIndex =
+      node.properties?.role === 'topology-group' ? GROUP_Z_INDEX : NODE_Z_INDEX
+    if (node.zIndex !== nextZIndex) {
+      lf.setElementZIndex(node.id, nextZIndex)
+    }
+  })
+  edges.forEach((edge) => {
+    if (edge.zIndex !== EDGE_Z_INDEX) {
+      lf.setElementZIndex(edge.id, EDGE_Z_INDEX)
+    }
+  })
+}
+
+function resetHistoryBaseline(lf) {
+  const currentData = lf.graphModel.modelToHistoryData?.() || lf.getGraphData()
+  lf.history.undos = [cloneGraph(currentData)]
+  lf.history.redos = []
+  lf.history.curData = null
+  lf.emit('history:change', {
+    data: {
+      undos: lf.history.undos,
+      redos: lf.history.redos,
+      undoAble: false,
+      redoAble: false,
+    },
+  })
+}
+
 function applyEditorTheme(lf) {
   lf.setTheme({
     rect: {
-      radius: 8,
+      radius: 6,
       stroke: '#32746d',
       strokeWidth: 1.5,
       fill: '#f6fbf9',
@@ -35,6 +144,21 @@ function applyEditorTheme(lf) {
       hoverStroke: '#32746d',
       selectedStroke: '#32746d',
     },
+    edgeText: {
+      textWidth: 90,
+      fontSize: 12,
+      color: '#334155',
+      background: {
+        fill: '#ffffff',
+        stroke: '#d8dee4',
+        radius: 4,
+        wrapPadding: '3px,6px',
+      },
+    },
+    nodeText: {
+      color: '#172026',
+      fontSize: 13,
+    },
     text: {
       color: '#172026',
       fontSize: 13,
@@ -43,6 +167,10 @@ function applyEditorTheme(lf) {
 }
 
 function configureEditorMenus(lf) {
+  const servicePattern =
+    STEP_TYPES.find((item) => item.properties.category === 'business-service') ||
+    STEP_TYPES[0]
+
   lf.setMenuConfig({
     nodeMenu: [
       {
@@ -68,14 +196,14 @@ function configureEditorMenus(lf) {
     ],
     graphMenu: [
       {
-        text: '添加提示词节点',
+        text: '添加业务服务',
         callback(position) {
           lf.addNode({
-            type: 'rect',
+            type: servicePattern.type,
             x: position.x,
             y: position.y,
-            text: '新提示词',
-            properties: STEP_TYPES[0].properties,
+            text: servicePattern.text,
+            properties: servicePattern.properties,
           })
         },
       },
@@ -86,9 +214,10 @@ function configureEditorMenus(lf) {
 export function useLogicFlowEditor() {
   const containerRef = useRef(null)
   const lfRef = useRef(null)
+  const sourceGraphRef = useRef(cloneGraph(SOURCE_GRAPH))
   const [selected, setSelected] = useState(null)
-  const [graphText, setGraphText] = useState(() => stringifyGraph(INITIAL_GRAPH))
-  const [status, setStatus] = useState('模板已载入')
+  const [graphText, setGraphText] = useState(() => stringifyGraph(SOURCE_GRAPH))
+  const [status, setStatus] = useState('架构拓扑模板已载入')
   const [selectionMode, setSelectionMode] = useState(false)
 
   useEffect(() => {
@@ -101,44 +230,65 @@ export function useLogicFlowEditor() {
       stopZoomGraph: false,
       adjustEdge: true,
       edgeTextEdit: true,
+      edgeTextDraggable: true,
       nodeTextEdit: true,
+      history: false,
+      overlapMode: OverlapMode.STATIC,
       plugins: [Control, DndPanel, Menu, MiniMap, SelectionSelect, Snapshot],
     })
 
     const syncGraph = () => {
       const data = lf.getGraphData()
       setGraphText(stringifyGraph(data))
-      setStatus('流程已更新')
+      setStatus('拓扑图已更新')
     }
 
     applyEditorTheme(lf)
-    lf.render(INITIAL_GRAPH)
+    registerTopologyGroupNode(lf)
+    lf.render(sourceGraphRef.current)
+    enforceLayering(lf)
     lf.extension.dndPanel.setPatternItems(PATTERN_ITEMS)
     configureEditorMenus(lf)
     lf.extension.miniMap.show()
+    lf.options.history = true
+    lf.history.watch(lf.graphModel)
 
     lf.on('node:click,edge:click', ({ data }) => setSelected(data))
     lf.on('blank:click', () => setSelected(null))
+    lf.on('history:change', () => {
+      window.requestAnimationFrame(() => {
+        setGraphText(stringifyGraph(lf.getGraphData()))
+      })
+    })
     lf.on(
-      'node:dnd-add,node:drop,edge:add,node:delete,edge:delete,node:properties-change,text:update',
+      'graph:updated,node:dnd-add,node:drop,node:resize,edge:add,edge:adjust,edge:exchange-node,node:delete,edge:delete,node:properties-change,text:update,text:drop,label:update,label:drop',
       syncGraph,
     )
+    resetHistoryBaseline(lf)
 
     lfRef.current = lf
-    window.FlowchartTemplate = {
+    const templateApi = {
       getGraphData: () => lf.getGraphData(),
+      getSourceGraphData: () => cloneGraph(sourceGraphRef.current),
       renderGraphData: (data) => {
-        lf.render(data)
+        lf.render(normalizeGraphLayering(data))
+        enforceLayering(lf)
+        resetHistoryBaseline(lf)
         syncGraph()
       },
-      setPrompt: (prompt) => {
-        lf.setProperties('prompt', { ...STEP_TYPES[0].properties, prompt })
+      resetToSource: () => {
+        lf.render(sourceGraphRef.current)
+        enforceLayering(lf)
+        resetHistoryBaseline(lf)
         syncGraph()
       },
       exportJson: () => stringifyGraph(lf.getGraphData()),
     }
+    window.TopologyTemplate = templateApi
+    window.FlowchartTemplate = templateApi
 
     return () => {
+      delete window.TopologyTemplate
       delete window.FlowchartTemplate
       lfRef.current = null
       lf.destroy()
@@ -153,12 +303,18 @@ export function useLogicFlowEditor() {
       lf.updateText(selected.id, value)
       setSelected((current) => ({ ...current, text: { value } }))
     } else {
+      const nextValue = ['width', 'height'].includes(field)
+        ? Number.parseInt(value, 10) || ''
+        : value
       const nextProperties = {
         ...(selected.properties || {}),
-        [field]: value,
+        [field]: nextValue,
       }
       lf.setProperties(selected.id, nextProperties)
       setSelected((current) => ({ ...current, properties: nextProperties }))
+      if (selected.properties?.role === 'topology-group') {
+        enforceLayering(lf)
+      }
     }
 
     setGraphText(stringifyGraph(lf.getGraphData()))
@@ -172,13 +328,16 @@ export function useLogicFlowEditor() {
     const { nodes } = lf.getGraphData()
     const x = 160 + (nodes.length % 4) * 210
     const y = 330 + Math.floor(nodes.length / 4) * 120
+    const isGroupNode = step.properties?.role === 'topology-group'
     lf.addNode({
       type: step.type,
       x,
       y,
       text: step.text,
       properties: step.properties,
+      zIndex: isGroupNode ? GROUP_Z_INDEX : NODE_Z_INDEX,
     })
+    enforceLayering(lf)
   }
 
   const renderFromJson = () => {
@@ -187,7 +346,9 @@ export function useLogicFlowEditor() {
 
     try {
       const graph = JSON.parse(graphText)
-      lf.render(graph)
+      lf.render(normalizeGraphLayering(graph))
+      enforceLayering(lf)
+      resetHistoryBaseline(lf)
       setSelected(null)
       setStatus('JSON 已重新渲染到画布')
     } catch (error) {
@@ -199,10 +360,12 @@ export function useLogicFlowEditor() {
     const lf = lfRef.current
     if (!lf) return
 
-    lf.render(INITIAL_GRAPH)
-    setGraphText(stringifyGraph(INITIAL_GRAPH))
+    lf.render(sourceGraphRef.current)
+    enforceLayering(lf)
+    resetHistoryBaseline(lf)
+    setGraphText(stringifyGraph(sourceGraphRef.current))
     setSelected(null)
-    setStatus('已恢复初始流程')
+    setStatus('已恢复初始拓扑图')
   }
 
   const toggleSelection = () => {
@@ -218,7 +381,16 @@ export function useLogicFlowEditor() {
   const exportSnapshot = () => {
     const lf = lfRef.current
     if (!lf) return
-    lf.getSnapshot('prompt-html-flowchart')
+    enforceLayering(lf)
+    setGraphText(stringifyGraph(lf.getGraphData()))
+    lf.getSnapshot('architecture-topology', {
+      fileType: 'png',
+      backgroundColor: '#eef2f6',
+      padding: 24,
+      partial: false,
+      safetyFactor: 1.2,
+      safetyMargin: 80,
+    })
   }
 
   return {

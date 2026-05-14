@@ -1,10 +1,10 @@
 import '@logicflow/core/lib/style/index.css'
 import '@logicflow/extension/lib/style/index.css'
 import './styles/app.css'
-import { FlowchartTemplatePage } from './pages/FlowchartTemplatePage'
+import { TopologyTemplatePage } from './pages/FlowchartTemplatePage'
 
 function App() {
-  return <FlowchartTemplatePage />
+  return <TopologyTemplatePage />
 }
 
 export default App

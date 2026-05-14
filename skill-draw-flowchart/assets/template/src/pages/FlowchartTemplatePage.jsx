@@ -2,10 +2,10 @@ import { FlowCanvas } from '../components/FlowCanvas'
 import { NodeLibrary } from '../components/NodeLibrary'
 import { PropertyPanel } from '../components/PropertyPanel'
 import { Topbar } from '../components/Topbar'
-import { FLOW_METADATA, STEP_TYPES } from '../data/flowTemplate'
+import { FLOW_METADATA, STEP_TYPES, TOPOLOGY_GROUPS } from '../data/flowTemplate'
 import { useLogicFlowEditor } from '../hook/useLogicFlowEditor'
 
-export function FlowchartTemplatePage() {
+export function TopologyTemplatePage() {
   const editor = useLogicFlowEditor()
 
   return (
@@ -21,10 +21,14 @@ export function FlowchartTemplatePage() {
       <section className="workspace">
         <NodeLibrary
           metadata={FLOW_METADATA}
+          groups={TOPOLOGY_GROUPS}
           stepTypes={STEP_TYPES}
           onAddStep={editor.addStep}
         />
-        <FlowCanvas containerRef={editor.containerRef} status={editor.status} />
+        <FlowCanvas
+          containerRef={editor.containerRef}
+          status={editor.status}
+        />
         <PropertyPanel
           selected={editor.selected}
           graphText={editor.graphText}

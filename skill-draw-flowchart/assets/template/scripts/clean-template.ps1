@@ -14,6 +14,8 @@ $targets = @(
   'node_modules',
   'vite-dev.log',
   'vite-dev.err.log',
+  'vite-preview.out.log',
+  'vite-preview.err.log',
   'public/favicon.svg',
   'public/icons.svg',
   'src/assets/hero.png',

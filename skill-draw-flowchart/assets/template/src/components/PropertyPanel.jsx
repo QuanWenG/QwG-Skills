@@ -9,14 +9,50 @@ function PropertyForm({ selected, selectedProperties, onUpdateSelected }) {
         />
       </label>
       <label>
-        角色
+        角色 / 层级
         <input
           value={selectedProperties.role || ''}
           onChange={(event) => onUpdateSelected('role', event.target.value)}
         />
       </label>
       <label>
-        提示词片段
+        架构分组
+        <input
+          value={selectedProperties.group || ''}
+          onChange={(event) => onUpdateSelected('group', event.target.value)}
+        />
+      </label>
+      <label>
+        类型
+        <input
+          value={selectedProperties.category || ''}
+          onChange={(event) => onUpdateSelected('category', event.target.value)}
+        />
+      </label>
+      {selectedProperties.role === 'topology-group' ? (
+        <div className="dimension-grid">
+          <label>
+            宽度
+            <input
+              type="number"
+              min="80"
+              value={selectedProperties.width || ''}
+              onChange={(event) => onUpdateSelected('width', event.target.value)}
+            />
+          </label>
+          <label>
+            高度
+            <input
+              type="number"
+              min="60"
+              value={selectedProperties.height || ''}
+              onChange={(event) => onUpdateSelected('height', event.target.value)}
+            />
+          </label>
+        </div>
+      ) : null}
+      <label>
+        节点说明
         <textarea
           rows="6"
           value={selectedProperties.prompt || ''}
@@ -54,7 +90,9 @@ export function PropertyPanel({
           onUpdateSelected={onUpdateSelected}
         />
       ) : (
-        <p className="empty-state">选择一个节点或连线后，在这里调整文案和属性。</p>
+        <p className="empty-state">
+          选择节点后调整分组、类型和说明；选择连线后可直接双击画布上的标签修改调用、数据流或业务含义。
+        </p>
       )}
 
       <div className="json-panel">
