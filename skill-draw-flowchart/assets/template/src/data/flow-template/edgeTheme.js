@@ -1,0 +1,51 @@
+export const EDGE_THEME = {
+  'business-flow': {
+    stroke: '#2563eb',
+    labelFill: '#dbeafe',
+    labelStroke: '#93c5fd',
+    labelColor: '#1e3a8a',
+    arrowType: 'solid',
+  },
+  'service-call': {
+    stroke: '#16a34a',
+    labelFill: '#ccfbf1',
+    labelStroke: '#86efac',
+    labelColor: '#14532d',
+    arrowType: 'hollow',
+    arrowFill: '#ffffff',
+  },
+  'message-flow': {
+    stroke: '#0891b2',
+    labelFill: '#cffafe',
+    labelStroke: '#67e8f9',
+    labelColor: '#164e63',
+    arrowType: 'solid',
+    strokeDasharray: '8 5',
+  },
+  'data-flow': {
+    stroke: '#ea580c',
+    labelFill: '#ffedd5',
+    labelStroke: '#fdba74',
+    labelColor: '#7c2d12',
+    arrowType: 'diamond',
+  },
+  'depends-on': {
+    stroke: '#475569',
+    labelFill: '#f1f5f9',
+    labelStroke: '#cbd5e1',
+    labelColor: '#334155',
+    arrowType: 'circle',
+    arrowFill: '#ffffff',
+    strokeDasharray: '9 6',
+  },
+  'deploy-flow': {
+    stroke: '#7c3aed',
+    labelFill: '#ede9fe',
+    labelStroke: '#c4b5fd',
+    labelColor: '#4c1d95',
+    arrowType: 'hollow',
+    arrowFill: '#ffffff',
+    strokeDasharray: '12 6',
+  },
+}
+
