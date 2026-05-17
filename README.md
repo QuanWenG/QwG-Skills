@@ -17,7 +17,7 @@
 </td>
 </tr>
 <tr>
-<td width="100%" valign="top">
+<td width="50%" valign="top">
 <a href="./skill-skillmd-review"><strong>规范你的Skill的Skill</strong></a>
 <br/><sub>使用Skill辅助规范化你的skill</sub>
 </td>
