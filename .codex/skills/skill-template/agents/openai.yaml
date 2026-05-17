@@ -1,3 +1,0 @@
-display_name: Skill Template
-short_description: Generate a standard empty Codex skill skeleton.
-default_prompt: Create a new empty Codex skill from this template and help me fill in the required metadata.
