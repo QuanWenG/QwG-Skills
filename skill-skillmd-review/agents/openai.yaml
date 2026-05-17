@@ -1,0 +1,3 @@
+display_name: Skill MD Review
+short_description: Review, repair, and validate Codex SKILL.md files.
+default_prompt: Use this skill to review and improve a Codex SKILL.md so it is triggerable, structured, executable, and validated.

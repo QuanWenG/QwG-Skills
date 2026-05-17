@@ -16,6 +16,12 @@
 <br/><sub>基于logic-flow根据提示词画系统架构拓扑流程图skill</sub>
 </td>
 </tr>
+<tr>
+<td width="100%" valign="top">
+<a href="./skill-skillmd-review"><strong>规范你的Skill的Skill</strong></a>
+<br/><sub>使用Skill辅助规范化你的skill</sub>
+</td>
+</tr>
 </table>
 
 </div>
