@@ -1,0 +1,3 @@
+display_name: Skill Design Patterns
+short_description: 用 Design Patterns 和 SOLID 指导代码设计、重构与评审。
+default_prompt: 使用 skill-design-patterns，从设计模式、高内聚、低耦合角度帮助我完成代码设计或重构。

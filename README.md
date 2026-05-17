@@ -21,6 +21,10 @@
 <a href="./skill-skillmd-review"><strong>规范你的Skill的Skill</strong></a>
 <br/><sub>使用Skill辅助规范化你的skill</sub>
 </td>
+<td width="50%" valign="top">
+<a href="./skill-design-patterns"><strong>学习过设计模式的Skill</strong></a>
+<br/><sub>使用设计模式skill去规范化ai写的代码</sub>
+</td>
 </tr>
 </table>
 
