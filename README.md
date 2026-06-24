@@ -26,6 +26,12 @@
 <br/><sub>使用设计模式skill去规范化ai写的代码</sub>
 </td>
 </tr>
+<tr>
+<td width="50%" valign="top">
+<a href="./skill-novelai-helper"><strong>NovelAI助手SKill</strong></a>
+<br/><sub>定义可便于管理的画师串，同时将自然语言转化为tag提示词</sub>
+</td>
+</tr>
 </table>
 
 </div>
